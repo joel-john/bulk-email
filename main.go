@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
+	"net/smtp"
 	"os"
 	"text/template"
 )
@@ -85,6 +87,28 @@ func ReadRecipient(recipientListFileName, templateFileName, from, subject string
 			subject: subject,
 			body:    body,
 		}
+		m.Send()
+	}
+}
+
+//Send for sending email
+func (m *Message) Send() {
+	// Set up authentication information.
+	auth := smtp.PlainAuth("", "user@example.com", "password", "mail.example.com")
+
+	//Convert "to" to []string
+	to := []string{m.to}
+	//RFC 822-style email format
+	//Omit "to" parameter in msg to send as bcc
+	msg := []byte("From:" + m.from + "\r\n" +
+		"Subject: " + m.subject + "!\r\n" +
+		"\r\n" +
+		m.body + "\r\n")
+
+	err := smtp.SendMail("mail.example.com:25", auth, "sender@example.org", to, msg)
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	fmt.Println("Email Sent!")
 }
