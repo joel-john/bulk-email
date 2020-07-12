@@ -10,22 +10,45 @@ import (
 	"net/smtp"
 	"os"
 	"text/template"
+
+	"github.com/urfave/cli"
 )
 
 func main() {
-	// app := &cli.App{
-	// 	Name:  "Bulk Email",
-	// 	Usage: "Send Bulk Emails",
-	// 	Action: func(c *cli.Context) error {
-	// 		fmt.Println("For help run mail --help")
-	// 		return nil
-	// 	},
-	// }
 
-	// err := app.Run(os.Args)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	var templateFileName, recipientListFileName string
+
+	//For reading the template and recipientList file names, cli is utilized
+	// https://github.com/urfave/cli
+	app := &cli.App{
+		Name:  "bmail",
+		Usage: "Send Bulk Emails",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "template, t",
+				Usage:    "Load the template file (HTML)",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     "maillist, m",
+				Usage:    "Load the maillist file (csv)",
+				Required: true,
+			},
+		},
+		Action: func(c *cli.Context) error {
+
+			templateFileName = c.String("template")
+			recipientListFileName = c.String("maillist")
+			fmt.Println("For help run bmail --help")
+			return nil
+		},
+	}
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+	subject := "Test Mail"
+	ReadRecipient(recipientListFileName, templateFileName, subject)
 
 }
 
@@ -56,7 +79,7 @@ func ParseTemplate(templateFileName string, data interface{}) string {
 }
 
 //ReadRecipient reads list of recipients from csv file
-func ReadRecipient(recipientListFileName, templateFileName, from, subject string) {
+func ReadRecipient(recipientListFileName, templateFileName, subject string) {
 
 	// Open the file
 	csvFile, err := os.Open(recipientListFileName)
@@ -79,36 +102,39 @@ func ReadRecipient(recipientListFileName, templateFileName, from, subject string
 		data := struct {
 			Name string
 		}{
-			Name: record[1],
+			Name: record[0],
 		}
 		body := ParseTemplate(templateFileName, data)
 		m := Message{
-			to:      record[3],
+			to:      record[1],
 			subject: subject,
 			body:    body,
+			from:    "mail@example.com",
 		}
-		m.Send()
+		go m.Send()
 	}
 }
 
 //Send for sending email
 func (m *Message) Send() {
 	// Set up authentication information.
-	auth := smtp.PlainAuth("", "user@example.com", "password", "mail.example.com")
+	auth := smtp.PlainAuth("", "sender@example.org", "password", "localhost")
 
 	//Convert "to" to []string
 	to := []string{m.to}
 	//RFC 822-style email format
 	//Omit "to" parameter in msg to send as bcc
-	msg := []byte("From:" + m.from + "\r\n" +
-		"Subject: " + m.subject + "!\r\n" +
+	msg := []byte("From: " + m.from + "\r\n" +
+		"To: " + m.to + "\r\n" +
+		"Subject: " + m.subject + "\r\n" +
+		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n" +
 		"\r\n" +
 		m.body + "\r\n")
 
-	err := smtp.SendMail("mail.example.com:25", auth, "sender@example.org", to, msg)
+	err := smtp.SendMail("localhost:1025", auth, "sender@example.org", to, msg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Email Sent!")
+	fmt.Println("Email Sent! to ", m.to)
 }
