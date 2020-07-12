@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bufio"
-	"encoding/csv"
-	"fmt"
-	"os"
+	"bytes"
+	"log"
+	"text/template"
 )
 
 func main() {
@@ -24,22 +23,28 @@ func main() {
 
 }
 
+//Message struct
+type Message struct {
+	to      string
+	from    string
+	subject string
+	body    string
+}
+
 //ServerSetup For setting up server
 func ServerSetup() {
 
 }
 
-//Read reads list of recipients from csv file
-func Read() {
+//ParseTemplate parses the template
+func ParseTemplate(templateFileName string, data interface{}) string {
 
-	csvFile, _ := os.Open("recipients.csv")
-	reader := csv.NewReader(bufio.NewReader(csvFile))
-
-}
-
-//Send for sending email
-func Send() {
-
-	fmt.Println("Email Sent!")
-
+	// Open the file
+	tmpl, err := template.ParseFiles(templateFileName)
+	if err != nil {
+		log.Fatalln("Couldn't open the template", err)
+	}
+	buf := new(bytes.Buffer)
+	tmpl.Execute(buf, data)
+	return buf.String()
 }
