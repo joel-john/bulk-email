@@ -60,11 +60,6 @@ type Message struct {
 	body    string
 }
 
-//ServerSetup For setting up server
-func ServerSetup() {
-
-}
-
 //ParseTemplate parses the template
 func ParseTemplate(templateFileName string, data interface{}) string {
 
@@ -111,7 +106,7 @@ func ReadRecipient(recipientListFileName, templateFileName, subject string) {
 			body:    body,
 			from:    "mail@example.com",
 		}
-		go m.Send()
+		m.Send()
 	}
 }
 
