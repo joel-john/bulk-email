@@ -4,12 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/smtp"
 	"os"
+	"regexp"
 	"text/template"
+	"time"
 
 	"github.com/urfave/cli"
 )
@@ -18,7 +21,7 @@ func main() {
 
 	var templateFileName, recipientListFileName string
 
-	//For reading the template and recipientList file names, cli is utilized
+	//For reading the template and recipientList filepaths, cli is utilized
 	// https://github.com/urfave/cli
 	app := &cli.App{
 		Name:  "bmail",
@@ -94,19 +97,31 @@ func ReadRecipient(recipientListFileName, templateFileName, subject string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		data := struct {
-			Name string
-		}{
-			Name: record[0],
+
+		//validating email structure using regex
+		erre := ValidateFormat(record[1])
+		if erre != nil {
+			fmt.Println(record[1], "Email is not valid.")
 		}
-		body := ParseTemplate(templateFileName, data)
-		m := Message{
-			to:      record[1],
-			subject: subject,
-			body:    body,
-			from:    "mail@example.com",
+		if erre == nil {
+			//Structure for sending data to
+			data := struct {
+				Name string
+			}{
+				Name: record[0],
+			}
+			//Parsing data to template (i.e "Name" in place of {.Name})
+			body := ParseTemplate(templateFileName, data)
+			m := Message{
+				to:      record[1],
+				subject: subject,
+				body:    body,
+				from:    "mail@example.com",
+			}
+			m.Send()
+			time.Sleep(500 * time.Millisecond)
+
 		}
-		m.Send()
 	}
 }
 
@@ -127,9 +142,25 @@ func (m *Message) Send() {
 		m.body + "\r\n")
 
 	err := smtp.SendMail("localhost:1025", auth, "sender@example.org", to, msg)
+	count := 0
+	for err != nil && count <= 10 {
+		err = smtp.SendMail("localhost:1025", auth, "sender@example.org", to, msg)
+		count++
+	}
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		fmt.Println("Failed sending to ", m.to)
+	} else {
+		fmt.Println("Email Sent to ", m.to)
 	}
 
-	fmt.Println("Email Sent! to ", m.to)
+}
+
+// ValidateFormat validates the email using regex
+func ValidateFormat(email string) error {
+	regex := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	if !regex.MatchString(email) {
+		return errors.New("Invalid Format")
+	}
+	return nil
 }
