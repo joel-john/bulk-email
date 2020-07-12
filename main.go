@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/csv"
+	"io"
 	"log"
+	"os"
 	"text/template"
 )
 
@@ -47,4 +51,40 @@ func ParseTemplate(templateFileName string, data interface{}) string {
 	buf := new(bytes.Buffer)
 	tmpl.Execute(buf, data)
 	return buf.String()
+}
+
+//ReadRecipient reads list of recipients from csv file
+func ReadRecipient(recipientListFileName, templateFileName, from, subject string) {
+
+	// Open the file
+	csvFile, err := os.Open(recipientListFileName)
+	if err != nil {
+		log.Fatalln("Couldn't open the csv file", err)
+	}
+	// Parse the file
+	reader := csv.NewReader(bufio.NewReader(csvFile))
+
+	// Iterate through the records
+	for {
+		// Read each record from csv
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		data := struct {
+			Name string
+		}{
+			Name: record[1],
+		}
+		body := ParseTemplate(templateFileName, data)
+		m := Message{
+			to:      record[3],
+			subject: subject,
+			body:    body,
+		}
+	}
+
 }
