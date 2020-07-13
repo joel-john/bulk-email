@@ -24,12 +24,14 @@ func main() {
 
 	//Declaring file names
 	var templateFileName, recipientListFileName, configFileName string
+	var subject string
 
 	//For reading the template and recipientList filepaths, cli is utilized
 	// https://github.com/urfave/cli
 	app := &cli.App{
-		Name:  "bmail",
-		Usage: "Send Bulk Emails",
+		EnableBashCompletion: true,
+		Name:                 "bmail",
+		Usage:                "Send Bulk Emails",
 		//cli flags take Filepath from user
 		Flags: []cli.Flag{
 			//cli flag for taking TemplateFilepath from user
@@ -45,6 +47,13 @@ func main() {
 				Usage:    "Load recipient list (csv) from `FILE`",
 				Required: true,
 			},
+			//cli flag for taking subject from user
+			//if no subject is given, default value will be used
+			&cli.StringFlag{
+				Name:  "subject, s",
+				Usage: "Specify the subject for email",
+				Value: "Test Mail",
+			},
 			//cli flag for taking SMTPConfigFilepath from user
 			&cli.StringFlag{
 				Name:     "config, c",
@@ -56,6 +65,7 @@ func main() {
 
 			templateFileName = c.String("template")
 			recipientListFileName = c.String("recipient")
+			subject = c.String("subject")
 			configFileName = c.String("config")
 			fmt.Println("Use bmail --template TEMPLATEFILE.html --recipient RECIPIENTLIST.csv")
 			return nil
@@ -67,7 +77,6 @@ func main() {
 	}
 
 	//from := "mail@example.com"
-	subject := "Test Mail"
 
 	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
 
