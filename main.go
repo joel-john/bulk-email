@@ -111,6 +111,60 @@ type Message struct {
 	body    string
 }
 
+//SplitRecipients splits recipient files
+//into number of smtp server relays available
+func SplitRecipients(recipientListFileName string, serverCount, recordLength int) {
+
+	var array []int
+	array = append(array, 0)
+	array = append(array, (recordLength / serverCount))
+	for i := 1; i <= serverCount; i++ {
+		array = append(array, (recordLength / serverCount))
+	}
+	for i := 1; i <= (recordLength % serverCount); i++ {
+		array[i] = array[i] + 1
+	}
+
+	//Opens the recipientListFile
+	recipientListFile, err := os.Open(recipientListFileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer recipientListFile.Close()
+	reader := csv.NewReader(recipientListFile)
+	for i := 1; i <= serverCount; i++ {
+		j := strconv.Itoa(i)
+		filename := "recipientList" + j + ".csv"
+		recipientListFile, err := os.Create(filename)
+		if err != nil {
+			fmt.Println(err)
+		}
+		writer := csv.NewWriter(recipientListFile)
+		for k := 0; k < array[i]; k++ {
+			record, err := reader.Read()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				fmt.Println(err)
+				return
+			}
+			err = writer.Write(record)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+		}
+		writer.Flush()
+		err = recipientListFile.Close()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+}
+
 //VerifyCSV verifies all files and returns error if verification fails
 func VerifyCSV(recipientListFileName, configFileName string) int {
 
