@@ -86,13 +86,18 @@ func main() {
 			port:     port[i],
 		}
 		j := strconv.Itoa(i + 1)
-		filename := "recipientList" + j + ".csv"
+		filename := "BMail_recipientList" + j + ".csv"
 		go ReadRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, &wg)
 	}
 	//wait for all exectutions to finish
 	fmt.Println("Waiting To Finish")
 	wg.Wait()
-	fmt.Println("\nTerminating Program")
+	fmt.Println("\nTerminating Program and removing temporary files")
+	for k := 0; k < serverCount; k++ {
+		j := strconv.Itoa(k + 1)
+		filename := "BMail_recipientList" + j + ".csv"
+		os.Remove(filename)
+	}
 
 }
 
@@ -136,7 +141,7 @@ func SplitRecipients(recipientListFileName string, serverCount, recordLength int
 	reader := csv.NewReader(recipientListFile)
 	for i := 1; i <= serverCount; i++ {
 		j := strconv.Itoa(i)
-		filename := "recipientList" + j + ".csv"
+		filename := "BMail_recipientList" + j + ".csv"
 		recipientListFile, err := os.Create(filename)
 		if err != nil {
 			fmt.Println(err)
