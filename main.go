@@ -19,30 +19,40 @@ import (
 
 func main() {
 
-	var templateFileName, recipientListFileName string
+	var templateFileName, recipientListFileName, configFileName string
 
 	//For reading the template and recipientList filepaths, cli is utilized
 	// https://github.com/urfave/cli
 	app := &cli.App{
 		Name:  "bmail",
 		Usage: "Send Bulk Emails",
+		//cli flags take Filepath from user
 		Flags: []cli.Flag{
+			//cli flag for taking TemplateFilepath from user
 			&cli.StringFlag{
 				Name:     "template, t",
-				Usage:    "Load the template file (HTML)",
+				Usage:    "Load HTML template from `FILE`",
 				Required: true,
 			},
+			//cli flag for taking RecipientlistFilepath from user
 			&cli.StringFlag{
-				Name:     "maillist, m",
-				Usage:    "Load the maillist file (csv)",
+				Name:     "recipient, r",
+				Usage:    "Load recipient list (csv) from `FILE`",
+				Required: true,
+			},
+			//cli flag for taking SMTPConfigFilepath from user
+			&cli.StringFlag{
+				Name:     "config, c",
+				Usage:    "Load SMTPConfig File (csv) from `FILE`",
 				Required: true,
 			},
 		},
 		Action: func(c *cli.Context) error {
 
 			templateFileName = c.String("template")
-			recipientListFileName = c.String("maillist")
-			fmt.Println("For help run bmail --help")
+			recipientListFileName = c.String("recipient")
+			configFileName = c.String("config")
+			fmt.Println("Use bmail --template TEMPLATEFILE.html --recipient RECIPIENTLIST.csv")
 			return nil
 		},
 	}
@@ -51,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 	subject := "Test Mail"
-	ReadRecipient(recipientListFileName, templateFileName, subject)
+	ReadRecipient(recipientListFileName, templateFileName, configFileName, subject)
 
 }
 
@@ -72,14 +82,39 @@ func ParseTemplate(templateFileName string, data interface{}) string {
 		log.Fatalln("Couldn't open the template", err)
 	}
 	buf := new(bytes.Buffer)
+	//data is inserted into {{.}} fields
 	tmpl.Execute(buf, data)
 	return buf.String()
 }
 
 //ReadRecipient reads list of recipients from csv file
-func ReadRecipient(recipientListFileName, templateFileName, subject string) {
+func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject string) {
 
-	// Open the file
+	configFile, err := os.Open(configFileName)
+	if err != nil {
+		log.Fatalln("Couldn't open the csv file", err)
+	}
+	// Parse the file
+	r := csv.NewReader(bufio.NewReader(configFile))
+
+	var username, password, hostname, port string
+
+	for {
+		// Read each smtp records details from csv
+		serverRecord, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		username = serverRecord[0]
+		password = serverRecord[1]
+		hostname = serverRecord[2]
+		port = serverRecord[3]
+	}
+
+	// Open the recipient list
 	csvFile, err := os.Open(recipientListFileName)
 	if err != nil {
 		log.Fatalln("Couldn't open the csv file", err)
@@ -101,7 +136,7 @@ func ReadRecipient(recipientListFileName, templateFileName, subject string) {
 		//validating email structure using regex
 		erre := ValidateFormat(record[1])
 		if erre != nil {
-			fmt.Println(record[1], "Email is not valid.")
+			fmt.Println("Email address (", record[1], ") is not valid - Skipping...")
 		}
 		if erre == nil {
 			//Structure for sending data to
@@ -110,7 +145,7 @@ func ReadRecipient(recipientListFileName, templateFileName, subject string) {
 			}{
 				Name: record[0],
 			}
-			//Parsing data to template (i.e "Name" in place of {.Name})
+			//Parsing data to template (i.e "Name" in place of {{.Name}})
 			body := ParseTemplate(templateFileName, data)
 			m := Message{
 				to:      record[1],
@@ -118,17 +153,18 @@ func ReadRecipient(recipientListFileName, templateFileName, subject string) {
 				body:    body,
 				from:    "mail@example.com",
 			}
-			m.Send()
-			time.Sleep(500 * time.Millisecond)
+			m.Send(username, password, hostname, port)
 
 		}
 	}
 }
 
 //Send for sending email
-func (m *Message) Send() {
+func (m *Message) Send(username, password, hostname, port string) {
 	// Set up authentication information.
-	auth := smtp.PlainAuth("", "sender@example.org", "password", "localhost")
+	//i, _ := strconv.Atoi(port)
+	auth := smtp.PlainAuth("", username, password, hostname)
+	addr := hostname + ":" + port
 
 	//Convert "to" to []string
 	to := []string{m.to}
@@ -141,10 +177,12 @@ func (m *Message) Send() {
 		"\r\n" +
 		m.body + "\r\n")
 
-	err := smtp.SendMail("localhost:1025", auth, "sender@example.org", to, msg)
+	err := smtp.SendMail(addr, auth, username, to, msg)
+	//If an error occurs while sending emails, it will try 10 times(waiting for 2 seconds each time)
 	count := 0
 	for err != nil && count <= 10 {
-		err = smtp.SendMail("localhost:1025", auth, "sender@example.org", to, msg)
+		time.Sleep(2 * time.Second)
+		err = smtp.SendMail(addr, auth, username, to, msg)
 		count++
 	}
 	if err != nil {
