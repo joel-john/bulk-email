@@ -71,7 +71,7 @@ func main() {
 
 	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
 
-	runtime.GOMAXPROCS(0) //Golan sets it to number of cores by default
+	runtime.GOMAXPROCS(0) //Golang sets it to number of cores by default
 
 	var wg sync.WaitGroup
 	wg.Add(serverCount)
