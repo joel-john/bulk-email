@@ -11,6 +11,9 @@ import (
 	"net/smtp"
 	"os"
 	"regexp"
+	"runtime"
+	"strconv"
+	"sync"
 	"text/template"
 	"time"
 
@@ -60,12 +63,47 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//from := "mail@example.com"
 	subject := "Test Mail"
-	ReadRecipient(recipientListFileName, templateFileName, configFileName, subject)
+
+	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
+
+	runtime.GOMAXPROCS(0) //number of cores by default
+
+	var wg sync.WaitGroup
+	wg.Add(serverCount)
+	fmt.Printf("GOMAXPROCS is %d\n", runtime.GOMAXPROCS(1))
+	recordLength := VerifyCSV(recipientListFileName, configFileName)
+	SplitRecipients(recipientListFileName, serverCount, recordLength)
+
+	for i := 0; i < serverCount; i++ {
+		serverstruct := ServerConfig{
+			username: username[i],
+			password: password[i],
+			hostname: hostname[i],
+			port:     port[i],
+		}
+		j := strconv.Itoa(i + 1)
+		filename := "recipientList" + j + ".csv"
+		go ReadRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, &wg)
+	}
+	//wait for all exectutions to finish
+	fmt.Println("Waiting To Finish")
+	wg.Wait()
+	fmt.Println("\nTerminating Program")
 
 }
 
-//Message struct
+//ServerConfig structure
+type ServerConfig struct {
+	username string
+	password string
+	hostname string
+	port     string
+}
+
+//Message structure
 type Message struct {
 	to      string
 	from    string
@@ -73,7 +111,48 @@ type Message struct {
 	body    string
 }
 
-//ParseTemplate parses the template
+//VerifyCSV verifies all files and returns error if verification fails
+func VerifyCSV(recipientListFileName, configFileName string) int {
+
+	var recordNo int = 0
+	//Validates recipientListFile
+	recipientListFile, err := os.Open(recipientListFileName)
+	if err != nil {
+		log.Fatalln("Couldn't open the recipientlist file : ", recipientListFileName, err)
+	}
+	// Parse the file
+	readRecipient := csv.NewReader(bufio.NewReader(recipientListFile))
+	// Iterate through the records
+	// Read each record from csv
+	for {
+		_, err = readRecipient.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal("Error while parsing recipientlist file : ", recipientListFileName, err)
+		}
+		recordNo++
+	}
+
+	//Validates configFile
+	configFile, err := os.Open(configFileName)
+	if err != nil {
+		log.Fatalln("Couldn't open the recipientlist file : ", configFileName, err)
+	}
+	// Parse the file
+	readConfig := csv.NewReader(bufio.NewReader(configFile))
+	// Read each record from csv
+	_, err = readConfig.ReadAll()
+	if err != nil {
+		log.Fatal("Error while parsing recipientlist file : ", configFileName, err)
+	}
+	return recordNo
+
+}
+
+//ParseTemplate parses the HTML template
+//for individual data is inserted into {{.}} fields
 func ParseTemplate(templateFileName string, data interface{}) string {
 
 	// Open the file
@@ -87,18 +166,20 @@ func ParseTemplate(templateFileName string, data interface{}) string {
 	return buf.String()
 }
 
-//ReadRecipient reads list of recipients from csv file
-func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject string) {
-
-	configFile, err := os.Open(configFileName)
-	if err != nil {
-		log.Fatalln("Couldn't open the csv file", err)
+//ParseServerConfig parsess the config file
+func ParseServerConfig(configFileName string) (int, []string, []string, []string, []string) {
+	//
+	// Reading config file
+	//
+	configFile, errc := os.Open(configFileName)
+	if errc != nil {
+		log.Fatalln("Couldn't open the csv file", errc)
 	}
 	// Parse the file
 	r := csv.NewReader(bufio.NewReader(configFile))
 
-	var username, password, hostname, port string
-
+	var username, password, hostname, port []string
+	var count int = 0
 	for {
 		// Read each smtp records details from csv
 		serverRecord, err := r.Read()
@@ -108,12 +189,22 @@ func ReadRecipient(recipientListFileName, templateFileName, configFileName, subj
 		if err != nil {
 			log.Fatal(err)
 		}
-		username = serverRecord[0]
-		password = serverRecord[1]
-		hostname = serverRecord[2]
-		port = serverRecord[3]
+		username = append(username, serverRecord[0])
+		password = append(password, serverRecord[1])
+		hostname = append(hostname, serverRecord[2])
+		port = append(port, serverRecord[3])
+		count++
 	}
+	return count, username, password, hostname, port
+}
 
+//ReadRecipient reads list of recipients from csv file
+func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject, from string, serverstruct ServerConfig, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+	//
+	// Reading recipient list file
+	//
 	// Open the recipient list
 	csvFile, err := os.Open(recipientListFileName)
 	if err != nil {
@@ -151,9 +242,9 @@ func ReadRecipient(recipientListFileName, templateFileName, configFileName, subj
 				to:      record[1],
 				subject: subject,
 				body:    body,
-				from:    "mail@example.com",
+				from:    from,
 			}
-			m.Send(username, password, hostname, port)
+			m.Send(serverstruct.username, serverstruct.password, serverstruct.hostname, serverstruct.port)
 
 		}
 	}
