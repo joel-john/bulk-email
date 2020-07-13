@@ -22,6 +22,7 @@ import (
 
 func main() {
 
+	//Declaring file names
 	var templateFileName, recipientListFileName, configFileName string
 
 	//For reading the template and recipientList filepaths, cli is utilized
@@ -37,6 +38,7 @@ func main() {
 				Usage:    "Load HTML template from `FILE`",
 				Required: true,
 			},
+
 			//cli flag for taking RecipientlistFilepath from user
 			&cli.StringFlag{
 				Name:     "recipient, r",
@@ -69,11 +71,10 @@ func main() {
 
 	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
 
-	runtime.GOMAXPROCS(0) //number of cores by default
+	runtime.GOMAXPROCS(0) //Golan sets it to number of cores by default
 
 	var wg sync.WaitGroup
 	wg.Add(serverCount)
-	fmt.Printf("GOMAXPROCS is %d\n", runtime.GOMAXPROCS(1))
 	recordLength := VerifyCSV(recipientListFileName, configFileName)
 	SplitRecipients(recipientListFileName, serverCount, recordLength)
 
@@ -112,7 +113,8 @@ type Message struct {
 }
 
 //SplitRecipients splits recipient files
-//into number of smtp server relays available
+//into different files according to the number of
+//smtp server relays available
 func SplitRecipients(recipientListFileName string, serverCount, recordLength int) {
 
 	var array []int
@@ -165,9 +167,12 @@ func SplitRecipients(recipientListFileName string, serverCount, recordLength int
 	}
 }
 
-//VerifyCSV verifies all files and returns error if verification fails
+//VerifyCSV verifies all the csv files
+//error is thrown if it fails
+//returns number of records in recipientList
 func VerifyCSV(recipientListFileName, configFileName string) int {
 
+	//for counting number of records in recipientList
 	var recordNo int = 0
 	//Validates recipientListFile
 	recipientListFile, err := os.Open(recipientListFileName)
@@ -206,7 +211,7 @@ func VerifyCSV(recipientListFileName, configFileName string) int {
 }
 
 //ParseTemplate parses the HTML template
-//for individual data is inserted into {{.}} fields
+//with data inserted into {{.}} fields
 func ParseTemplate(templateFileName string, data interface{}) string {
 
 	// Open the file
@@ -252,7 +257,8 @@ func ParseServerConfig(configFileName string) (int, []string, []string, []string
 	return count, username, password, hostname, port
 }
 
-//ReadRecipient reads list of recipients from csv file
+//ReadRecipient parses list of recipients from csv file
+//It also calls the SendEmail function
 func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject, from string, serverstruct ServerConfig, wg *sync.WaitGroup) {
 
 	defer wg.Done()
@@ -298,14 +304,14 @@ func ReadRecipient(recipientListFileName, templateFileName, configFileName, subj
 				body:    body,
 				from:    from,
 			}
-			m.Send(serverstruct.username, serverstruct.password, serverstruct.hostname, serverstruct.port)
+			m.SendEmail(serverstruct.username, serverstruct.password, serverstruct.hostname, serverstruct.port)
 
 		}
 	}
 }
 
-//Send for sending email
-func (m *Message) Send(username, password, hostname, port string) {
+//SendEmail sends the email with ServerInfo and Message details
+func (m *Message) SendEmail(username, password, hostname, port string) {
 	// Set up authentication information.
 	//i, _ := strconv.Atoi(port)
 	auth := smtp.PlainAuth("", username, password, hostname)
@@ -339,7 +345,8 @@ func (m *Message) Send(username, password, hostname, port string) {
 
 }
 
-// ValidateFormat validates the email using regex
+// ValidateFormat validates the format of email
+// Uses regular expression for validation
 func ValidateFormat(email string) error {
 	regex := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	if !regex.MatchString(email) {
