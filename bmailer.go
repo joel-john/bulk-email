@@ -31,10 +31,8 @@ func main() {
 	//For reading the template and recipientList filepaths, cli is utilized
 	// https://github.com/urfave/cli
 	app := &cli.App{
-		EnableBashCompletion: true,
-		Name:                 "BMailer",
-		Usage:                "Send Bulk Emails",
-		Author:               "Joel",
+		Name:  "BMailer",
+		Usage: "Send Bulk Emails",
 		//cli flags take Filepath from user
 		Flags: []cli.Flag{
 			//cli flag for taking TemplateFilepath from user
