@@ -25,6 +25,7 @@ func main() {
 	//Declaring file names
 	var templateFileName, recipientListFileName, configFileName string
 	var subject string
+	var delay int
 
 	//For reading the template and recipientList filepaths, cli is utilized
 	// https://github.com/urfave/cli
@@ -48,18 +49,23 @@ func main() {
 				Usage:    "Load recipient list (csv) from `FILE`",
 				Required: true,
 			},
-			//cli flag for taking subject from user
-			//if no subject is given, default value will be used
-			&cli.StringFlag{
-				Name:  "subject, s",
-				Usage: "Specify the subject for email",
-				Value: "Test Mail",
-			},
 			//cli flag for taking SMTPConfigFilepath from user
 			&cli.StringFlag{
 				Name:     "config, c",
 				Usage:    "Load SMTPConfig File (csv) from `FILE`",
 				Required: true,
+			},
+			//cli flag for taking subject from user
+			//if no subject is given, default value will be used
+			&cli.StringFlag{
+				Name:  "subject, s",
+				Usage: "Specify the `\"subject\"` for email",
+				Value: "Test Mail",
+			},
+			&cli.IntFlag{
+				Name:  "delay, d",
+				Usage: "Specify the `delay(in ms)` between each mail",
+				Value: 50,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -68,6 +74,7 @@ func main() {
 			recipientListFileName = c.String("recipient")
 			subject = c.String("subject")
 			configFileName = c.String("config")
+			delay = c.Int("delay")
 			fmt.Println("Use bmail --template TEMPLATEFILE.html --recipient RECIPIENTLIST.csv")
 			return nil
 		},
@@ -96,7 +103,7 @@ func main() {
 		}
 		j := strconv.Itoa(i + 1)
 		filename := "BMail_recipientList" + j + ".csv"
-		go ReadRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, &wg)
+		go ReadRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, delay, &wg)
 	}
 	//wait for all exectutions to finish
 	fmt.Println("Waiting To Finish")
@@ -309,7 +316,7 @@ func ParseServerConfig(configFileName string) (int, []string, []string, []string
 
 //ReadRecipient parses list of recipients from csv file
 //It also calls the SendEmail function
-func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject, from string, serverstruct ServerConfig, wg *sync.WaitGroup) {
+func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject, from string, serverstruct ServerConfig, delay int, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 	//
@@ -355,6 +362,7 @@ func ReadRecipient(recipientListFileName, templateFileName, configFileName, subj
 				from:    from,
 			}
 			m.SendEmail(serverstruct.username, serverstruct.password, serverstruct.hostname, serverstruct.port)
+			time.Sleep(time.Duration(delay) * time.Millisecond)
 
 		}
 	}
