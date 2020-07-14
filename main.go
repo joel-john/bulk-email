@@ -31,7 +31,7 @@ func main() {
 	// https://github.com/urfave/cli
 	app := &cli.App{
 		EnableBashCompletion: true,
-		Name:                 "b-mail",
+		Name:                 "BMailer",
 		Usage:                "Send Bulk Emails",
 		Author:               "Joel",
 		//cli flags take Filepath from user
@@ -90,6 +90,10 @@ func main() {
 
 	recordLength := VerifyCSV(recipientListFileName, configFileName)
 	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
+
+	if serverCount == 0 {
+		log.Fatal("No Valid SMTP Servers found : Atleast one valid SMTP Server should be there")
+	}
 	SplitRecipients(recipientListFileName, serverCount, recordLength)
 	var wg sync.WaitGroup
 	wg.Add(serverCount)
@@ -406,7 +410,7 @@ func (m *Message) SendEmail(username, password, hostname, port string) {
 // ValidateFormat validates the format of email
 // Uses regular expression for validation
 func ValidateFormat(email string) error {
-	regex := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	regex := regexp.MustCompile("^[\\sa-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	if !regex.MatchString(email) {
 		return errors.New("Invalid Format")
 	}
