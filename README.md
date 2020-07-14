@@ -21,10 +21,9 @@ In order to avoid emails marked as spam, a custom delay between each mail can be
 
 ## Usage
 
+For Test Running Examples and Instructions visit ([example](/example))
 
 ### Commandline
-
-For Test Examples and Instructions ([example](/example))
 
 ```
 
