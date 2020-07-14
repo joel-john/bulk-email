@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -92,9 +93,34 @@ func main() {
 	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
 
 	if serverCount == 0 {
-		log.Fatal("No Valid SMTP Servers found : Atleast one valid SMTP Server should be there")
+		log.Fatal("No Valid SMTP Serverconfig found : Atleast one valid SMTP Server should be there")
 	}
+	fmt.Println(" Do you want to proceed Sending")
+	fmt.Printf("Number of Email Records\t: %v\n", recordLength)
+	fmt.Printf("Number of Valid config\t: %v\n", serverCount)
+
+	fmt.Printf("\nEmail subject\t\t: %v\n", subject)
+	fmt.Printf("Delay between emails\t: %v ms\n", delay)
+	fmt.Println("----------------------------------------------")
+
+	fmt.Println("\nDo you want to proceed Sending ? (Y/N)")
+	reader := bufio.NewReader(os.Stdin)
+	l := 0
+	for {
+		text, _ := reader.ReadString('\n')
+		//Trimright is used for trimming the trailing space (\r\n for windows, \n for UNIX)
+		if strings.TrimRight(text, "\r\n") == "y" || strings.TrimRight(text, "\r\n") == "Y" {
+			break
+		} else if strings.TrimRight(text, "\r\n") == "n" || strings.TrimRight(text, "\r\n") == "N" || l == 5 {
+			os.Exit(3)
+		}
+		fmt.Println("\nInvalid Response!")
+		fmt.Println("\nDo you want to proceed Sending ? (Y/N)")
+		l++
+	}
+
 	SplitRecipients(recipientListFileName, serverCount, recordLength)
+	fmt.Printf("\nSplitted Recipient List into %v temporary files\n", serverCount)
 	var wg sync.WaitGroup
 	wg.Add(serverCount)
 
@@ -110,7 +136,7 @@ func main() {
 		go ReadRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, delay, &wg)
 	}
 	//wait for all exectutions to finish
-	fmt.Println("Waiting To Finish")
+	fmt.Println("\nWaiting To Finish Sending Emails")
 	wg.Wait()
 	fmt.Println("\nTerminating Program and removing temporary files")
 	for k := 0; k < serverCount; k++ {
