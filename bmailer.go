@@ -133,7 +133,7 @@ func main() {
 		}
 		j := strconv.Itoa(i + 1)
 		filename := "BMail_recipientList" + j + ".csv"
-		go ReadRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, delay, &wg)
+		go ParseRecipient(filename, templateFileName, configFileName, subject, username[i], serverstruct, delay, &wg)
 	}
 	//wait for all exectutions to finish
 	fmt.Println("\nWaiting To Finish Sending Emails")
@@ -344,9 +344,9 @@ func ParseServerConfig(configFileName string) (int, []string, []string, []string
 	return smtpCount, username, password, hostname, port
 }
 
-//ReadRecipient parses list of recipients from csv file
+//ParseRecipient parses list of recipients from csv file
 //It also calls the SendEmail function
-func ReadRecipient(recipientListFileName, templateFileName, configFileName, subject, from string, serverstruct ServerConfig, delay int, wg *sync.WaitGroup) {
+func ParseRecipient(recipientListFileName, templateFileName, configFileName, subject, from string, serverstruct ServerConfig, delay int, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 	//
