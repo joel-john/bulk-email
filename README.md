@@ -6,11 +6,25 @@ A simple client program to send bulk emails. Written completely in Go. It will s
 The arguments are given through command line interface ([CLI](https://github.com/urfave/cli))
 
 
+
+## About
+
+The main aim of this program is to send emails to a huge list of recipients (~1 Million). For sending emails, atleast one SMTP Server/ Relay is required.
+
+But for ensuring fast mass delivery, multiple SMTP can be utilized. In doing so, the program will divide the list of recipients to number of SMTP relays available and send the emails concurrently  (implemented using goroutines)
+
+    i.e, if number of recipients in list = 10000 and number of smtp relays are 4,
+    then each of the smtp servers send email to 2500 recipients concurrently
+
+In order to avoid emails marked as spam, a custom delay between each mail can be given (other wise default delay of 50ms is used)
+
+
 ## Usage
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See build for notes on how to build the project on a live system.
 
 ### Commandline
+
+For Test Examples and Instructions ([example](/example))
 
 ```
 
@@ -55,11 +69,12 @@ Example :
 
 #### RecipientList
 
-A CSV file with two columns - Name, email
+A CSV file with two columns - Name, Email
 
 It contains the list of email recipients. 
 Name column contains Name of Recipients (Which is used for mail-merge)
-email column contains email address of recipients (Used for sending emails)
+Email column contains email address of recipients (Used for sending emails)
+The program uses a basic regex validation for validating email address formats.
 
 Example :
 ```
@@ -80,9 +95,12 @@ password column contains smtp login password
 hostname column contains smtp server host
 port column contains smtp port
 
-Atleast one valid SMTP Server should be there for program execution
+Invalid SMTP details are automatically removed
+Atleast one valid SMTP Server should be there for successful program execution
+
 Example :
 ```
 hello@example.com,password,localhost,1025
 welcome@example.com,password,localhost,1025
 ``` 
+
