@@ -50,6 +50,7 @@ cli should be added to gomodues for building
 The files are passed as CLI flags, all File flags are mandatory
 
 Usage:
+
     --template TemplateFile, -t TemplateFile                Load HTML template from TemplateFile
     --recipient RecipientListFile, -r RecipientListFile     Load recipient list (csv) from RecipientListFile
     --config ConfigFile, -c ConfigFile                      Load SMTPConfig File (csv) from ConfigFile
