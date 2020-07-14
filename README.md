@@ -83,9 +83,6 @@ port column contains smtp port
 Atleast one valid SMTP Server should be there for program execution
 Example :
 ```
-John Doe,johndoe@example.com
-Jane Doe,jane@example.org
-Richard Wilson,richard@example.com
-Daniel Wilson,dani@example.org
-
+hello@example.com,password,localhost,1025
+welcome@example.com,password,localhost,1025
 ``` 
