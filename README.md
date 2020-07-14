@@ -18,6 +18,8 @@ But for ensuring fast mass delivery, multiple SMTP can be utilized. In doing so,
 
 In order to avoid emails marked as spam, a custom delay between each mail can be given (other wise default delay of 50ms is used)
 
+CSV file validation, email format validation and SMTP server validations are built into the program
+
 
 ## Usage and Documentation
 
