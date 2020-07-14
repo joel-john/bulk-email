@@ -21,9 +21,16 @@ In order to avoid emails marked as spam, a custom delay between each mail can be
 
 ## Usage
 
-For Test Running Examples and Instructions visit ([example](/example))
+For Test Demo Examples and Instructions visit ([example](/example))
 
-### Commandline
+## Prerequisites
+
+cli should be added to gomodues for building
+
+    GO111MODULE=on go get github.com/urfave/cli/v2
+    GO111MODULE=on go get github.com/urfave/cli
+
+## Commands
 
 ```
 
@@ -38,7 +45,16 @@ For Test Running Examples and Instructions visit ([example](/example))
 
 ```
 
-### File Structures
+### Files
+
+The files are passed as CLI flags, all File flags are mandatory
+
+Usage:
+    --template TemplateFile, -t TemplateFile                Load HTML template from TemplateFile
+    --recipient RecipientListFile, -r RecipientListFile     Load recipient list (csv) from RecipientListFile
+    --config ConfigFile, -c ConfigFile                      Load SMTPConfig File (csv) from ConfigFile
+
+### Files Structures
 
 #### Template
 
@@ -47,7 +63,7 @@ An HTML File
 The contents of email are provided by the HTML Template file. 
 For mail-merging of Name, {{.Name}} Tag is used
 
-Example :
+Example Template File :
 ```
 <html>
    <head>
@@ -75,7 +91,7 @@ Name column contains Name of Recipients (Which is used for mail-merge)
 Email column contains email address of recipients (Used for sending emails)
 The program uses a basic regex validation for validating email address formats.
 
-Example :
+Example RecipientList File:
 ```
 John Doe,johndoe@example.com
 Jane Doe,jane@example.org
@@ -97,9 +113,26 @@ port column contains smtp port
 Invalid SMTP details are automatically removed
 Atleast one valid SMTP Server should be there for successful program execution
 
-Example :
+Example Config File:
 ```
 hello@example.com,password,localhost,1025
 welcome@example.com,password,localhost,1025
 ``` 
+### Subject
+
+The subject of email is passed as a CLI argument. 
+If no subject is given, default subject "Test Mail" is used
+
+Usage:
+
+    --subject "Hello World!", -s "Hello World!"      sets 'Hello World!' as the subject for email
+
+### Delays
+
+If a need of custom delay between emails are needed, this flag should be set,
+If no arguments are given, default delay of 50ms is used
+
+    --delay 500, -d 500             sets a delay of 500 ms between each email
+
+
 
