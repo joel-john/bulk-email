@@ -25,17 +25,8 @@ CSV file validation, email format validation and SMTP server validations are bui
 
 For Detailed Documentation visit ([./docs/manual.md](./docs/manual.md))
 
-For Test Demo Examples and Instructions visit ([./example](./example))
+For Usage Examples and testing visit ([./example](./example))
 
-
-## Prerequisites for building
-
-cli package should be installed
-
-```
-$ GO111MODULE=on go get github.com/urfave/cli/v2
-$ GO111MODULE=on go get github.com/urfave/cli
-```
 
 ## Licence
 
