@@ -30,8 +30,9 @@ func main() {
 	// https://github.com/urfave/cli
 	app := &cli.App{
 		EnableBashCompletion: true,
-		Name:                 "bmail",
+		Name:                 "b-mail",
 		Usage:                "Send Bulk Emails",
+		Author:               "Joel",
 		//cli flags take Filepath from user
 		Flags: []cli.Flag{
 			//cli flag for taking TemplateFilepath from user
@@ -78,14 +79,13 @@ func main() {
 
 	//from := "mail@example.com"
 
-	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
-
 	runtime.GOMAXPROCS(0) //Golang sets it to number of cores by default
 
+	recordLength := VerifyCSV(recipientListFileName, configFileName)
+	serverCount, username, password, hostname, port := ParseServerConfig(configFileName)
+	SplitRecipients(recipientListFileName, serverCount, recordLength)
 	var wg sync.WaitGroup
 	wg.Add(serverCount)
-	recordLength := VerifyCSV(recipientListFileName, configFileName)
-	SplitRecipients(recipientListFileName, serverCount, recordLength)
 
 	for i := 0; i < serverCount; i++ {
 		serverstruct := ServerConfig{
@@ -191,6 +191,7 @@ func VerifyCSV(recipientListFileName, configFileName string) int {
 	//Validates recipientListFile
 	recipientListFile, err := os.Open(recipientListFileName)
 	if err != nil {
+		fmt.Println("Error occured during verifying csv, Verify the records before running")
 		log.Fatalln("Couldn't open the recipientlist file : ", recipientListFileName, err)
 	}
 	// Parse the file
@@ -203,6 +204,7 @@ func VerifyCSV(recipientListFileName, configFileName string) int {
 			break
 		}
 		if err != nil {
+			fmt.Println("Error occured during verifying csv, Verify the records before running")
 			log.Fatal("Error while parsing recipientlist file : ", recipientListFileName, err)
 		}
 		recordNo++
@@ -211,21 +213,23 @@ func VerifyCSV(recipientListFileName, configFileName string) int {
 	//Validates configFile
 	configFile, err := os.Open(configFileName)
 	if err != nil {
-		log.Fatalln("Couldn't open the recipientlist file : ", configFileName, err)
+		fmt.Println("Error occured during verifying csv, Verify the records before running")
+		log.Fatalln("Couldn't open the smtplist file : ", configFileName, err)
 	}
 	// Parse the file
 	readConfig := csv.NewReader(bufio.NewReader(configFile))
 	// Read each record from csv
 	_, err = readConfig.ReadAll()
 	if err != nil {
-		log.Fatal("Error while parsing recipientlist file : ", configFileName, err)
+		fmt.Println("Error occured during verifying csv, Verify the records before running")
+		log.Fatal("Error while parsing smtplist file : ", configFileName, err)
 	}
 	return recordNo
 
 }
 
 //ParseTemplate parses the HTML template
-//with data inserted into {{.}} fields
+//mail-merge data into {{.}} fields
 func ParseTemplate(templateFileName string, data interface{}) string {
 
 	// Open the file
@@ -252,7 +256,7 @@ func ParseServerConfig(configFileName string) (int, []string, []string, []string
 	r := csv.NewReader(bufio.NewReader(configFile))
 
 	var username, password, hostname, port []string
-	var count int = 0
+	var smtpCount int = 0
 	for {
 		// Read each smtp records details from csv
 		serverRecord, err := r.Read()
@@ -262,13 +266,45 @@ func ParseServerConfig(configFileName string) (int, []string, []string, []string
 		if err != nil {
 			log.Fatal(err)
 		}
-		username = append(username, serverRecord[0])
-		password = append(password, serverRecord[1])
-		hostname = append(hostname, serverRecord[2])
-		port = append(port, serverRecord[3])
-		count++
+
+		//The following code sends a test email with each server config
+		//If the email is send successfully, it will be used in sending real
+		//emails, else those records are skipped
+		auth := smtp.PlainAuth("", serverRecord[0], serverRecord[1], serverRecord[2])
+		addr := serverRecord[2] + ":" + serverRecord[3]
+		//Convert "to" to []string
+		to := []string{serverRecord[0]}
+		//RFC 822-style email format
+		msg := []byte("From: " + serverRecord[0] + "\r\n" +
+			"To: " + serverRecord[0] + "\r\n" +
+			"Subject: This is a test  mail for verifying SMTP Config" + "\r\n" +
+			"MIME-version: 1.0;\nContent-Type: text/text; charset=\"UTF-8\";\n\n" +
+			"\r\n" +
+			"SMTP Config verified successfully" + "\r\n")
+
+		errsend := smtp.SendMail(addr, auth, serverRecord[0], to, msg)
+		//If an error occurs while sending emails, it will try 5 times(waiting for .5 seconds each time)
+		count := 0
+		for errsend != nil && count <= 5 {
+			time.Sleep(500 * time.Millisecond)
+			err = smtp.SendMail(addr, auth, serverRecord[0], to, msg)
+			count++
+		}
+		if errsend != nil {
+			fmt.Println(err)
+			fmt.Println("Failed Adding server config with username ", serverRecord[0])
+		} else {
+			//If there are no errors, the records are added to corresponding slices and
+			//smtp count is incremented
+			fmt.Println("Successfully added config with username ", serverRecord[0])
+			username = append(username, serverRecord[0])
+			password = append(password, serverRecord[1])
+			hostname = append(hostname, serverRecord[2])
+			port = append(port, serverRecord[3])
+			smtpCount++
+		}
 	}
-	return count, username, password, hostname, port
+	return smtpCount, username, password, hostname, port
 }
 
 //ReadRecipient parses list of recipients from csv file
