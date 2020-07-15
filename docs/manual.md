@@ -28,7 +28,7 @@ bmailer manual
 
 ```
 
-./bmailer [--template TEMPLATEFILE] [--recipient RECIPIENTLISTFILE] [--config CONFIGFILE] [--subject "subject"] [--delay "delay"]
+./bmailer [--template TEMPLATEFILE] [--recipient RECIPIENTLISTFILE] [--config CONFIGFILE] [--subject "subject"] [--delay delay]
 
     --template FILE, -t FILE               Load HTML template from FILE                 [Required Argument]
     --recipient FILE, -r FILE              Load recipient list (csv) from FILE          [Required Argument]
@@ -49,7 +49,7 @@ Usage:
     --recipient RecipientListFile, -r RecipientListFile     Load recipient list (csv) from RecipientListFile
     --config ConfigFile, -c ConfigFile                      Load SMTPConfig File (csv) from ConfigFile
 
-#### Files Structures
+#### File Structures
 
 #### Template
 
