@@ -3,7 +3,7 @@ bulk-mailer test
 
 ## Test Environment Setup
 
-Either you can use own SMTP Servers or SMTP from services like Mailgun.
+Either you can use own SMTP Servers or get SMTP from services like Mailgun.
 
 Free services like Gmail/Yahoo wont support sending bulk emails
 
@@ -148,5 +148,7 @@ Note that with 20 recipients and 6 servers, it sent a total of 26 emails.
 The first 6 emails are for verifying smtp configuration
 
 
+Email Content:
 
+![Email Content](./Email-Content.png?raw=true)
 
