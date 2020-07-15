@@ -25,7 +25,7 @@ CSV file validation, email format validation and SMTP server validations are bui
 
 For Detailed Documentation visit ([./docs/manual.md](./docs/manual.md))
 
-For Test cases ([./example](./example))
+For Test envirionment and Sample files ([./sample](./sample))
 
 ## Prerequisites
 
