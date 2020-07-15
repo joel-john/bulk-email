@@ -18,7 +18,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -37,34 +37,39 @@ func main() {
 		Flags: []cli.Flag{
 			//cli flag for taking TemplateFilepath from user
 			&cli.StringFlag{
-				Name:     "template, t",
+				Name:     "template",
+				Aliases:  []string{"t"},
 				Usage:    "Load HTML template from `FILE`",
 				Required: true,
 			},
 
 			//cli flag for taking RecipientlistFilepath from user
 			&cli.StringFlag{
-				Name:     "recipient, r",
+				Name:     "recipient",
+				Aliases:  []string{"r"},
 				Usage:    "Load recipient list (csv) from `FILE`",
 				Required: true,
 			},
 			//cli flag for taking SMTPConfigFilepath from user
 			&cli.StringFlag{
 				Name:     "config, c",
+				Aliases:  []string{"c"},
 				Usage:    "Load SMTPConfig File (csv) from `FILE`",
 				Required: true,
 			},
 			//cli flag for taking subject from user
 			//if no subject is given, default value will be used
 			&cli.StringFlag{
-				Name:  "subject, s",
-				Usage: "Specify the `\"subject\"` for email",
-				Value: "Test Mail",
+				Name:    "subject, s",
+				Aliases: []string{"s"},
+				Usage:   "Specify the `\"subject\"` for email",
+				Value:   "Test Mail",
 			},
 			&cli.IntFlag{
-				Name:  "delay, d",
-				Usage: "Specify the `delay(in ms)` between each mail",
-				Value: 50,
+				Name:    "delay, d",
+				Aliases: []string{"d"},
+				Usage:   "Specify the `delay(in ms)` between each mail",
+				Value:   50,
 			},
 		},
 		Action: func(c *cli.Context) error {
