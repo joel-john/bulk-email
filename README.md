@@ -25,7 +25,31 @@ CSV file validation, email format validation and SMTP server validations are bui
 
 For Detailed Documentation visit ([./docs/manual.md](./docs/manual.md))
 
-For Usage Examples and testing visit ([./example](./example))
+For Test cases ([./example](./example))
+
+## Prerequisites
+
+Requires Go Environment and Go Modules
+
+GoPath Should be set 
+
+## Installation
+
+```bash
+go get github.com/joel-john/bulk-mailer
+```
+
+### Debian /Ubuntu
+
+Run with `/path/to/bulk-mailer -t TEMPLATEFILE.CSV -r RECIPIENTLISTFILE.CSV -c SMTPCONFIG.CSV -s "SUBJECT" -d DELAY_IN_ms`
+
+with default go bin path of `/go/bin` in ubuntu use
+
+```bash
+~/go/bin/bulk-mailer -t TEMPLATEFILE.CSV -r RECIPIENTLISTFILE.CSV -c SMTPCONFIG.CSV -s "SUBJECT" -d DELAY_IN_ms
+```
+
+The flag details and file structures are explained in  ([./docs/manual.md](./docs/manual.md))
 
 
 ## Licence
