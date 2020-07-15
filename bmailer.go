@@ -79,7 +79,6 @@ func main() {
 			subject = c.String("subject")
 			configFileName = c.String("config")
 			delay = c.Int("delay")
-			fmt.Println("Use bmail --template TEMPLATEFILE.html --recipient RECIPIENTLIST.csv")
 			return nil
 		},
 	}
