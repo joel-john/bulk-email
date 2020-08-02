@@ -36,7 +36,7 @@ GoPath Should be set
 ## Installation
 
 ```bash
-go get github.com/joel-john/bulk-mailer
+go get github.com/joeljohn/bulk-mailer
 ```
 
 ### Debian /Ubuntu
