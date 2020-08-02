@@ -64,7 +64,7 @@ Sample [HugeRecipientList.csv](./HugeRecipientList.csv) with 1 million email rec
 Install using : 
 
 ```bash
-go get github.com/joel-john/bulk-mailer
+go get github.com/joeljohn/bulk-mailer
 ```
 
 Download all the Sample Files,
